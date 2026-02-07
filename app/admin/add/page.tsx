@@ -64,17 +64,18 @@ export default function AddTermPage() {
     }
   }, []);
 
+  async function loadTerms() {
+    const response = await fetch("/api/terms", { cache: "no-store" });
+    const data = await response.json();
+    if (response.ok) {
+      setTerms(data.terms as Term[]);
+      return;
+    }
+    setStatus(`Error: ${data.error ?? "Could not load terms list."}`);
+  }
+
   useEffect(() => {
     if (!isUnlocked) return;
-
-    async function loadTerms() {
-      const response = await fetch("/api/terms");
-      const data = await response.json();
-      if (response.ok) {
-        setTerms(data.terms as Term[]);
-      }
-    }
-
     loadTerms();
   }, [isUnlocked]);
 
@@ -113,11 +114,11 @@ export default function AddTermPage() {
 
     setStatus(isEditing ? `Updated: ${data.term.term}` : `Saved: ${data.term.term}`);
 
-    if (isEditing) {
-      setTerms((prev) => prev.map((entry) => (entry.slug === data.term.slug ? (data.term as Term) : entry)));
-    } else {
-      setTerms((prev) => [...prev, data.term as Term].sort((a, b) => a.term.localeCompare(b.term)));
+    await loadTerms();
+
+    if (!isEditing) {
       setFormState(emptyForm);
+      setSelectedSlug("");
     }
   }
 

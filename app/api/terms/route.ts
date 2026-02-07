@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { getAllTerms, normalizeList, slugify, termsPath } from "@/lib/terms";
 import { Term } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function parseRoots(raw: string): Term["roots"] {
   const items = raw
     .split(",")
@@ -38,7 +41,7 @@ function parseReferences(raw: string): Term["references"] {
 export async function GET() {
   try {
     const terms = await getAllTerms();
-    return NextResponse.json({ terms });
+    return NextResponse.json({ terms }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown server error";
     return NextResponse.json({ error: `Failed to load terms: ${message}` }, { status: 500 });
