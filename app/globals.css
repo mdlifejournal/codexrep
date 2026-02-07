@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-stone-50 text-stone-900;
+}
+
+a {
+  @apply text-sky-800 hover:text-sky-600;
+}
