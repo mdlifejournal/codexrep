@@ -27,6 +27,47 @@ function parseExplanation(explanation: string): ExplanationBlock[] {
     });
 }
 
+function renderTextWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = [...text.matchAll(urlRegex)];
+
+  if (matches.length === 0) {
+    return text;
+  }
+
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+
+  matches.forEach((match, index) => {
+    const url = match[0];
+    const start = match.index ?? 0;
+
+    if (start > cursor) {
+      parts.push(text.slice(cursor, start));
+    }
+
+    parts.push(
+      <a
+        key={`${url}-${index}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
+        {url}
+      </a>,
+    );
+
+    cursor = start + url.length;
+  });
+
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
+
+  return parts;
+}
+
 export default async function TermPage({ params }: { params: { slug: string } }) {
   const term = await getTermBySlug(params.slug);
   if (!term) notFound();
@@ -53,7 +94,7 @@ export default async function TermPage({ params }: { params: { slug: string } })
               />
             ) : (
               <p key={`${block.value}-${index}`} className="leading-7 text-stone-800">
-                {block.value}
+                {renderTextWithLinks(block.value)}
               </p>
             ),
           )}
