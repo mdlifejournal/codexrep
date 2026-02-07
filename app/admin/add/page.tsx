@@ -111,6 +111,11 @@ export default function AddTermPage() {
     if (!imageItem) return;
 
     event.preventDefault();
+
+    const textarea = event.currentTarget;
+    const selectionStart = textarea?.selectionStart ?? formState.explanation.length;
+    const selectionEnd = textarea?.selectionEnd ?? selectionStart;
+
     const imageFile = imageItem.getAsFile();
     if (!imageFile) return;
 
@@ -118,17 +123,18 @@ export default function AddTermPage() {
     const imageUrl = await uploadImage(imageFile);
     if (!imageUrl) return;
 
-    const textarea = event.currentTarget;
-    const selectionStart = textarea.selectionStart ?? formState.explanation.length;
-    const selectionEnd = textarea.selectionEnd ?? selectionStart;
-    const before = formState.explanation.slice(0, selectionStart);
-    const after = formState.explanation.slice(selectionEnd);
-    const markdown = `\n![Pasted medical image](${imageUrl})\n`;
+    const markdown = `
+![Pasted medical image](${imageUrl})
+`;
 
-    setFormState((prev) => ({
-      ...prev,
-      explanation: `${before}${markdown}${after}`,
-    }));
+    setFormState((prev) => {
+      const before = prev.explanation.slice(0, selectionStart);
+      const after = prev.explanation.slice(selectionEnd);
+      return {
+        ...prev,
+        explanation: `${before}${markdown}${after}`,
+      };
+    });
 
     setStatus("Image uploaded and inserted into explanation.");
   }
