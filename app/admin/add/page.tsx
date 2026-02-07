@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 
 const SESSION_KEY = "medterm-admin-authenticated";
+const PASSWORD_KEY = "medterm-admin-password";
 
 export default function AddTermPage() {
   const [passwordInput, setPasswordInput] = useState("");
@@ -12,7 +13,9 @@ export default function AddTermPage() {
 
   useEffect(() => {
     const cached = localStorage.getItem(SESSION_KEY);
-    if (cached === "true") {
+    const cachedPassword = sessionStorage.getItem(PASSWORD_KEY);
+    if (cached === "true" && cachedPassword) {
+      setSavedPassword(cachedPassword);
       setIsUnlocked(true);
     }
   }, []);
@@ -64,14 +67,21 @@ export default function AddTermPage() {
         />
         <button
           onClick={() => {
+            if (!passwordInput.trim()) {
+              setStatus("Enter the admin password first.");
+              return;
+            }
             setSavedPassword(passwordInput);
             setIsUnlocked(true);
             localStorage.setItem(SESSION_KEY, "true");
+            sessionStorage.setItem(PASSWORD_KEY, passwordInput);
+            setStatus(null);
           }}
           className="rounded bg-stone-900 px-4 py-2 text-white"
         >
           Unlock
         </button>
+        {status ? <p className="mt-3 text-sm text-rose-700">{status}</p> : null}
       </div>
     );
   }
@@ -79,6 +89,20 @@ export default function AddTermPage() {
   return (
     <div className="mx-auto max-w-2xl rounded-xl border border-stone-200 bg-white p-6">
       <h1 className="mb-6 font-serif text-3xl">Add a Medical Term</h1>
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            setIsUnlocked(false);
+            setSavedPassword("");
+            localStorage.removeItem(SESSION_KEY);
+            sessionStorage.removeItem(PASSWORD_KEY);
+          }}
+          className="text-sm text-stone-600 underline"
+        >
+          Lock admin panel
+        </button>
+      </div>
       <form className="space-y-4" onSubmit={submit}>
         <Input name="term" label="Term" required />
         <Input name="definition" label="Definition" required />
