@@ -7,9 +7,31 @@ export async function generateStaticParams() {
   return terms.map((term) => ({ slug: term.slug }));
 }
 
+type ExplanationBlock =
+  | { type: "text"; value: string }
+  | { type: "image"; alt: string; src: string };
+
+function parseExplanation(explanation: string): ExplanationBlock[] {
+  return explanation
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (!match) {
+        return { type: "text", value: line } as ExplanationBlock;
+      }
+
+      const [, alt, src] = match;
+      return { type: "image", alt: alt || "Explanation image", src } as ExplanationBlock;
+    });
+}
+
 export default async function TermPage({ params }: { params: { slug: string } }) {
   const term = await getTermBySlug(params.slug);
   if (!term) notFound();
+
+  const explanationBlocks = parseExplanation(term.explanation);
 
   return (
     <article className="mx-auto max-w-3xl space-y-6 rounded-xl border border-stone-200 bg-white p-8">
@@ -20,7 +42,22 @@ export default async function TermPage({ params }: { params: { slug: string } })
 
       <section>
         <h2 className="mb-2 font-semibold uppercase tracking-widest text-stone-500">Explanation</h2>
-        <p className="leading-7 text-stone-800">{term.explanation}</p>
+        <div className="space-y-4">
+          {explanationBlocks.map((block, index) =>
+            block.type === "image" ? (
+              <img
+                key={`${block.src}-${index}`}
+                src={block.src}
+                alt={block.alt}
+                className="max-h-96 w-full rounded-lg border border-stone-200 object-contain"
+              />
+            ) : (
+              <p key={`${block.value}-${index}`} className="leading-7 text-stone-800">
+                {block.value}
+              </p>
+            ),
+          )}
+        </div>
       </section>
 
       {term.roots?.length ? (

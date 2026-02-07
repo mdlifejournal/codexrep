@@ -33,8 +33,14 @@ Restart the dev server after editing env vars.
 2. Enter your admin password to unlock.
 3. Keep mode as **Add new term**.
 4. Fill out the term form (`term`, `definition`, `explanation`, and optional fields).
+<<<<<<< codex/build-medical-terms-web-app-u3xfks
+5. (Optional) In the **Explanation** box, paste an image from your clipboard. It uploads to `/public/uploads` and inserts markdown automatically.
+6. Submit to call `POST /api/terms`.
+7. The term is appended to `/data/terms.json` with generated `slug` + `createdAt` timestamp.
+=======
 5. Submit to call `POST /api/terms`.
 6. The term is appended to `/data/terms.json` with generated `slug` + `createdAt` timestamp.
+>>>>>>> main
 
 ## Edit an existing term from the app
 

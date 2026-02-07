@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ClipboardEvent, FormEvent, useEffect, useState } from "react";
 import { Term } from "@/lib/types";
 
 const SESSION_KEY = "medterm-admin-authenticated";
@@ -83,6 +83,54 @@ export default function AddTermPage() {
     setSavedPassword(password);
     setPasswordInput(password);
     sessionStorage.setItem(PASSWORD_KEY, password);
+  }
+
+  async function uploadImage(file: File): Promise<string | null> {
+    const payload = new FormData();
+    payload.append("image", file);
+
+    const response = await fetch("/api/uploads", {
+      method: "POST",
+      headers: {
+        "x-admin-password": savedPassword.trim(),
+      },
+      body: payload,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      setStatus(`Error: ${data.error ?? "Image upload failed."}`);
+      return null;
+    }
+
+    return String(data.url);
+  }
+
+  async function handleExplanationPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const imageItem = Array.from(event.clipboardData.items).find((item) => item.type.startsWith("image/"));
+    if (!imageItem) return;
+
+    event.preventDefault();
+    const imageFile = imageItem.getAsFile();
+    if (!imageFile) return;
+
+    setStatus("Uploading pasted image...");
+    const imageUrl = await uploadImage(imageFile);
+    if (!imageUrl) return;
+
+    const textarea = event.currentTarget;
+    const selectionStart = textarea.selectionStart ?? formState.explanation.length;
+    const selectionEnd = textarea.selectionEnd ?? selectionStart;
+    const before = formState.explanation.slice(0, selectionStart);
+    const after = formState.explanation.slice(selectionEnd);
+    const markdown = `\n![Pasted medical image](${imageUrl})\n`;
+
+    setFormState((prev) => ({
+      ...prev,
+      explanation: `${before}${markdown}${after}`,
+    }));
+
+    setStatus("Image uploaded and inserted into explanation.");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -235,7 +283,13 @@ export default function AddTermPage() {
       </div>
 
       <form className="space-y-4" onSubmit={submit}>
-        <Input name="term" label="Term" required value={formState.term} onChange={(value) => setFormState((prev) => ({ ...prev, term: value }))} />
+        <Input
+          name="term"
+          label="Term"
+          required
+          value={formState.term}
+          onChange={(value) => setFormState((prev) => ({ ...prev, term: value }))}
+        />
         <Input
           name="definition"
           label="Definition"
@@ -248,6 +302,8 @@ export default function AddTermPage() {
           label="Explanation"
           required
           value={formState.explanation}
+          onPaste={handleExplanationPaste}
+          hint="Tip: paste an image directly here. It will be uploaded and inserted as markdown."
           onChange={(value) => setFormState((prev) => ({ ...prev, explanation: value }))}
         />
         <Input
@@ -320,12 +376,16 @@ function TextArea({
   required = false,
   value,
   onChange,
+  hint,
+  onPaste,
 }: {
   label: string;
   name: string;
   required?: boolean;
   value: string;
   onChange: (value: string) => void;
+  hint?: string;
+  onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
 }) {
   return (
     <label className="block">
@@ -335,9 +395,11 @@ function TextArea({
         required={required}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onPaste={onPaste}
         rows={4}
         className="w-full rounded border border-stone-300 px-3 py-2"
       />
+      {hint ? <span className="mt-1 block text-xs text-stone-500">{hint}</span> : null}
     </label>
   );
 }
