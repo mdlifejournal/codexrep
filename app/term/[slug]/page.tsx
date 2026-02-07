@@ -52,7 +52,7 @@ function renderTextWithLinks(text: string) {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="underline"
+        className="text-sky-700 underline hover:text-sky-600"
       >
         {url}
       </a>,

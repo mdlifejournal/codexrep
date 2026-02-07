@@ -312,6 +312,19 @@ export default function AddTermPage() {
           hint="Tip: paste an image directly here. It will be uploaded and inserted as markdown."
           onChange={(value) => setFormState((prev) => ({ ...prev, explanation: value }))}
         />
+        {formState.explanation.trim() ? (
+          <div className="rounded-md border border-stone-200 bg-stone-50 p-3">
+            <p className="mb-2 text-sm font-semibold text-stone-700">Live preview (links are clickable)</p>
+            <div className="space-y-2 text-sm leading-6 text-stone-700">
+              {formState.explanation
+                .split("\n")
+                .filter((line) => line.trim())
+                .map((line, index) => (
+                  <p key={`${line}-${index}`}>{renderTextWithLinks(line)}</p>
+                ))}
+            </div>
+          </div>
+        ) : null}
         <Input
           name="abbreviations"
           label="Abbreviations (comma separated)"
@@ -347,6 +360,48 @@ export default function AddTermPage() {
       {status ? <p className="mt-4 text-sm text-stone-700">{status}</p> : null}
     </div>
   );
+}
+
+
+function renderTextWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = [...text.matchAll(urlRegex)];
+
+  if (matches.length === 0) {
+    return text;
+  }
+
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+
+  matches.forEach((match, index) => {
+    const url = match[0];
+    const start = match.index ?? 0;
+
+    if (start > cursor) {
+      parts.push(text.slice(cursor, start));
+    }
+
+    parts.push(
+      <a
+        key={`${url}-${index}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sky-700 underline hover:text-sky-600"
+      >
+        {url}
+      </a>,
+    );
+
+    cursor = start + url.length;
+  });
+
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
+
+  return parts;
 }
 
 function Input({
