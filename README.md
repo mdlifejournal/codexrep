@@ -57,3 +57,23 @@ If the admin form shows `Error: Unauthorized`, check these:
 1. `ADMIN_PASSWORD` is set in `.env.local`.
 2. You restarted `npm run dev` after changing `.env.local`.
 3. The password typed on `/admin/add` exactly matches `ADMIN_PASSWORD`.
+
+## Troubleshooting: merge conflict looks resolved but GitHub won’t mark it resolved
+
+If you edited a conflicted file (for example `README.md`) and GitHub still won’t mark it as resolved:
+
+1. Ensure all conflict markers are removed:
+   - `<<<<<<<`
+   - `=======`
+   - `>>>>>>>`
+2. Stage the file with `git add README.md`.
+3. Run `git status` and confirm there are no remaining unmerged paths.
+4. Complete the merge with `git commit` and push the branch.
+
+Quick check command:
+
+```bash
+rg -n "^(<<<<<<<|=======|>>>>>>>)" README.md
+```
+
+If this command prints nothing, the markers are gone in that file.
