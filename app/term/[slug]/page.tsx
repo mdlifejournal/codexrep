@@ -28,8 +28,8 @@ function parseExplanation(explanation: string): ExplanationBlock[] {
 }
 
 function renderTextWithLinks(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
-  const matches = [...text.matchAll(urlRegex)];
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+|www\.[^\s)]+)\)|(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+  const matches = [...text.matchAll(pattern)];
 
   if (matches.length === 0) {
     return text;
@@ -39,20 +39,40 @@ function renderTextWithLinks(text: string) {
   let cursor = 0;
 
   matches.forEach((match, index) => {
-    const rawUrl = match[0];
+    const raw = match[0];
+    const label = match[1];
+    const markdownUrl = match[2];
+    const plainUrl = match[3];
     const start = match.index ?? 0;
-
-    let cleanUrl = rawUrl;
-    while (/[),.;!?]$/.test(cleanUrl)) {
-      cleanUrl = cleanUrl.slice(0, -1);
-    }
-
-    const trailing = rawUrl.slice(cleanUrl.length);
 
     if (start > cursor) {
       parts.push(text.slice(cursor, start));
     }
 
+    if (markdownUrl) {
+      const href = markdownUrl.startsWith("www.") ? `https://${markdownUrl}` : markdownUrl;
+      parts.push(
+        <a
+          key={`${href}-${index}`}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all font-medium text-sky-700 underline decoration-sky-600 hover:text-sky-600"
+        >
+          {label}
+        </a>,
+      );
+      cursor = start + raw.length;
+      return;
+    }
+
+    const detected = plainUrl ?? raw;
+    let cleanUrl = detected;
+    while (/[),.;!?]$/.test(cleanUrl)) {
+      cleanUrl = cleanUrl.slice(0, -1);
+    }
+
+    const trailing = detected.slice(cleanUrl.length);
     const href = cleanUrl.startsWith("www.") ? `https://${cleanUrl}` : cleanUrl;
 
     parts.push(
@@ -71,7 +91,7 @@ function renderTextWithLinks(text: string) {
       parts.push(trailing);
     }
 
-    cursor = start + rawUrl.length;
+    cursor = start + raw.length;
   });
 
   if (cursor < text.length) {
