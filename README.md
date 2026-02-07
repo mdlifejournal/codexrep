@@ -1,4 +1,4 @@
-# MedTerm Origins
+# MedTerms
 
 A beginner-friendly web app inspired by etymonline.com, focused on medical terminology.
 

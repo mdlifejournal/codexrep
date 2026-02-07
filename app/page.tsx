@@ -8,8 +8,8 @@ export default async function HomePage() {
   return (
     <div className="space-y-10">
       <section className="space-y-5 text-center">
-        <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Medical Word Origins</p>
-        <h1 className="font-serif text-5xl font-semibold text-stone-900">Discover where medical terms come from.</h1>
+        <p className="text-sm uppercase tracking-[0.2em] text-stone-500">medical terms</p>
+        <h1 className="font-serif text-5xl font-semibold text-stone-900">medical terms</h1>
         <SearchBox terms={terms} />
       </section>
 
