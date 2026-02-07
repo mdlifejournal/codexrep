@@ -364,7 +364,7 @@ export default function AddTermPage() {
 
 
 function renderTextWithLinks(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
   const matches = [...text.matchAll(urlRegex)];
 
   if (matches.length === 0) {
@@ -375,26 +375,39 @@ function renderTextWithLinks(text: string) {
   let cursor = 0;
 
   matches.forEach((match, index) => {
-    const url = match[0];
+    const rawUrl = match[0];
     const start = match.index ?? 0;
+
+    let cleanUrl = rawUrl;
+    while (/[),.;!?]$/.test(cleanUrl)) {
+      cleanUrl = cleanUrl.slice(0, -1);
+    }
+
+    const trailing = rawUrl.slice(cleanUrl.length);
 
     if (start > cursor) {
       parts.push(text.slice(cursor, start));
     }
 
+    const href = cleanUrl.startsWith("www.") ? `https://${cleanUrl}` : cleanUrl;
+
     parts.push(
       <a
-        key={`${url}-${index}`}
-        href={url}
+        key={`${href}-${index}`}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sky-700 underline hover:text-sky-600"
+        className="break-all font-medium text-sky-700 underline decoration-sky-600 hover:text-sky-600"
       >
-        {url}
+        {cleanUrl}
       </a>,
     );
 
-    cursor = start + url.length;
+    if (trailing) {
+      parts.push(trailing);
+    }
+
+    cursor = start + rawUrl.length;
   });
 
   if (cursor < text.length) {
