@@ -95,3 +95,34 @@ export async function PUT(request: Request, { params }: { params: { slug: string
     return NextResponse.json({ error: `Failed to update term: ${message}` }, { status: 500 });
   }
 }
+
+
+export async function DELETE(request: Request, { params }: { params: { slug: string } }) {
+  try {
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const incomingPassword = request.headers.get("x-admin-password");
+
+    if (!adminPassword || incomingPassword !== adminPassword) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const slug = params.slug;
+    const filePath = termsPath();
+    const raw = await fs.readFile(filePath, "utf8");
+    const existingTerms = JSON.parse(raw) as Term[];
+    const index = existingTerms.findIndex((entry) => entry.slug === slug);
+
+    if (index === -1) {
+      return NextResponse.json({ error: "Term not found." }, { status: 404 });
+    }
+
+    const [deletedTerm] = existingTerms.splice(index, 1);
+    await fs.writeFile(filePath, `${JSON.stringify(existingTerms, null, 2)}
+`, "utf8");
+
+    return NextResponse.json({ term: deletedTerm }, { status: 200 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown server error";
+    return NextResponse.json({ error: `Failed to delete term: ${message}` }, { status: 500 });
+  }
+}

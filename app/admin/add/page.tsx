@@ -139,6 +139,42 @@ export default function AddTermPage() {
     setStatus("Image uploaded and inserted into explanation.");
   }
 
+
+  async function deleteSelectedTerm() {
+    if (!selectedSlug) {
+      setStatus("Select a term to delete first.");
+      return;
+    }
+
+    const selected = terms.find((term) => term.slug === selectedSlug);
+    if (!selected) {
+      setStatus("Selected term not found.");
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete "${selected.term}" permanently?`);
+    if (!confirmed) return;
+
+    const response = await fetch(`/api/terms/${selectedSlug}`, {
+      method: "DELETE",
+      headers: {
+        "x-admin-password": savedPassword.trim(),
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      setStatus(`Error: ${data.error ?? "Delete failed."}`);
+      return;
+    }
+
+    setStatus(`Deleted: ${selected.term}`);
+    setSelectedSlug("");
+    setIsEditing(false);
+    setFormState(emptyForm);
+    await loadTerms();
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -265,6 +301,13 @@ export default function AddTermPage() {
             className="rounded border border-stone-300 bg-white px-4 py-2"
           >
             New
+          </button>
+          <button
+            type="button"
+            onClick={deleteSelectedTerm}
+            className="rounded border border-rose-300 bg-rose-50 px-4 py-2 text-rose-700"
+          >
+            Delete
           </button>
         </div>
       </div>

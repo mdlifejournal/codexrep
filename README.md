@@ -45,6 +45,14 @@ Restart the dev server after editing env vars.
 3. Update any fields you want.
 4. Click **Update term** to save changes through `PUT /api/terms/[slug]`.
 
+
+## Delete an existing term from the app
+
+1. Open `/admin/add` and unlock with admin password.
+2. In **Edit existing term**, select the term.
+3. Click **Delete**.
+4. Confirm the prompt to permanently remove the term.
+
 ## Important note about JSON file saving
 
 This project writes to `data/terms.json` using Node file I/O. That works well in local development.
