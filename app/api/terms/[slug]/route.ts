@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { NextResponse } from "next/server";
-import { getAllTerms, normalizeList, slugify, termsPath } from "@/lib/terms";
+import { normalizeList, termsPath } from "@/lib/terms";
 import { Term } from "@/lib/types";
 
 function parseRoots(raw: string): Term["roots"] {
@@ -35,17 +35,7 @@ function parseReferences(raw: string): Term["references"] {
   return refs.length ? refs : undefined;
 }
 
-export async function GET() {
-  try {
-    const terms = await getAllTerms();
-    return NextResponse.json({ terms });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown server error";
-    return NextResponse.json({ error: `Failed to load terms: ${message}` }, { status: 500 });
-  }
-}
-
-export async function POST(request: Request) {
+export async function PUT(request: Request, { params }: { params: { slug: string } }) {
   try {
     const adminPassword = process.env.ADMIN_PASSWORD;
     const incomingPassword = request.headers.get("x-admin-password");
@@ -54,6 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const slug = params.slug;
     const body = await request.json();
     const term = String(body.term ?? "").trim();
     const definition = String(body.definition ?? "").trim();
@@ -66,23 +57,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const slug = slugify(term);
-    if (!slug) {
-      return NextResponse.json({ error: "Unable to generate a valid slug." }, { status: 400 });
-    }
-
     const filePath = termsPath();
     const raw = await fs.readFile(filePath, "utf8");
     const existingTerms = JSON.parse(raw) as Term[];
+    const index = existingTerms.findIndex((entry) => entry.slug === slug);
 
-    const duplicate = existingTerms.some((existingTerm) => existingTerm.slug === slug);
-    if (duplicate) {
-      return NextResponse.json({ error: `Term with slug "${slug}" already exists.` }, { status: 409 });
+    if (index === -1) {
+      return NextResponse.json({ error: "Term not found." }, { status: 404 });
     }
 
-    const newTerm: Term = {
+    const current = existingTerms[index];
+    const updated: Term = {
+      ...current,
       term,
-      slug,
       definition,
       explanation,
       abbreviations: normalizeList(String(body.abbreviations ?? "")),
@@ -90,22 +77,21 @@ export async function POST(request: Request) {
       related: normalizeList(String(body.related ?? "")),
       roots: parseRoots(String(body.roots ?? "")),
       references: parseReferences(String(body.references ?? "")),
-      createdAt: new Date().toISOString(),
     };
 
-    const cleanedTerm: Term = {
-      ...newTerm,
-      abbreviations: newTerm.abbreviations?.length ? newTerm.abbreviations : undefined,
-      synonyms: newTerm.synonyms?.length ? newTerm.synonyms : undefined,
-      related: newTerm.related?.length ? newTerm.related : undefined,
+    const cleaned: Term = {
+      ...updated,
+      abbreviations: updated.abbreviations?.length ? updated.abbreviations : undefined,
+      synonyms: updated.synonyms?.length ? updated.synonyms : undefined,
+      related: updated.related?.length ? updated.related : undefined,
     };
 
-    existingTerms.push(cleanedTerm);
+    existingTerms[index] = cleaned;
     await fs.writeFile(filePath, `${JSON.stringify(existingTerms, null, 2)}\n`, "utf8");
 
-    return NextResponse.json({ term: cleanedTerm }, { status: 201 });
+    return NextResponse.json({ term: cleaned }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown server error";
-    return NextResponse.json({ error: `Failed to save term: ${message}` }, { status: 500 });
+    return NextResponse.json({ error: `Failed to update term: ${message}` }, { status: 500 });
   }
 }
